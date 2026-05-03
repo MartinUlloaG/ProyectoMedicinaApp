@@ -1,17 +1,56 @@
-# medicina_app
+# App móvil de análisis de movimiento con IA
 
-A new Flutter project.
+**Flutter · Python · MediaPipe · FastAPI**
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## Descripción
 
-A few resources to get you started if this is your first Flutter project:
+Aplicación móvil que realiza análisis de movimiento humano mediante visión por computador.  
+La app captura datos desde el dispositivo móvil y los envía a un backend en Python, donde son procesados con MediaPipe para extraer información de pose y movimiento en tiempo real.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+El proyecto explora la integración de inteligencia artificial en aplicaciones móviles, utilizando una arquitectura cliente-servidor ligera basada en servicios.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## Stack tecnológico
+
+**Frontend**
+- Flutter (Dart)
+- Android Studio
+
+**Backend**
+- Python
+- FastAPI
+- Uvicorn
+
+**Visión por computador / IA**
+- MediaPipe
+- OpenCV (opcional)
+
+**Comunicación**
+- API REST (HTTP)
+
+---
+
+## Arquitectura
+
+El sistema está dividido en dos componentes:
+
+- **App móvil (Flutter):** captura datos del usuario y los envía al servidor.
+- **Servidor de IA (Python):** procesa el movimiento con MediaPipe y devuelve resultados estructurados.
+
+El backend funciona como una API local accesible en red.
+
+---
+
+## Ejecución del proyecto
+
+### Backend
+
+Activar el entorno virtual y levantar el servidor:
+
+```bash
+cd C:\Users\ullov\Desktop\MedicinaIA\ProyectoMovimiento-
+venv\Scripts\activate
+uvicorn servidor:app --reload --host 0.0.0.0 --port 8000
