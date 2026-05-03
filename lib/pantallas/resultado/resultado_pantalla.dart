@@ -3,12 +3,46 @@ import '../../core/tema/colores.dart';
 import '../../core/tema/tipografia.dart';
 import '../../core/widgets/encabezado.dart';
 import '../../core/widgets/boton_principal.dart';
+import '../../modelos/resultado_analisis.dart';
 import '../../rutas.dart';
 
 class ResultadoPantalla extends StatelessWidget {
   const ResultadoPantalla({super.key});
 
-  Widget _itemDetalle(String titulo, String subtitulo) {
+  Color _colorPuntaje(int puntaje) {
+    if (puntaje >= 80) return AppColores.correctoTexto;
+    if (puntaje >= 50) return AppColores.advertenciaTexto;
+    return AppColores.peligroTexto;
+  }
+
+  Color _bgPuntaje(int puntaje) {
+    if (puntaje >= 80) return AppColores.correctoBg;
+    if (puntaje >= 50) return AppColores.advertenciaBg;
+    return AppColores.peligroBg;
+  }
+
+  String _labelPuntaje(int puntaje) {
+    if (puntaje >= 80) return 'Ejercicio correcto';
+    if (puntaje >= 50) return 'Ejercicio con advertencias';
+    return 'Ejercicio con errores';
+  }
+
+  IconData _iconoPuntaje(int puntaje) {
+    if (puntaje >= 80) return Icons.check;
+    if (puntaje >= 50) return Icons.warning_amber_rounded;
+    return Icons.close;
+  }
+
+  Widget _itemDetalle(String feedback, int puntaje) {
+    final esNegativo = [
+      'mejore', 'alinee', 'flexione', 'extienda', 'nivele',
+      'acerque', 'aumente', 'distribuya', 'baje', 'cierre'
+    ].any((w) => feedback.toLowerCase().contains(w));
+
+    final color = esNegativo ? AppColores.advertenciaTexto : AppColores.correctoTexto;
+    final bg    = esNegativo ? AppColores.advertenciaBg    : AppColores.correctoBg;
+    final icono = esNegativo ? Icons.warning_amber_rounded : Icons.check;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -21,22 +55,13 @@ class ResultadoPantalla extends StatelessWidget {
         children: [
           Container(
             width: 28, height: 28,
-            decoration: BoxDecoration(
-              color: AppColores.correctoBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.check, color: AppColores.correctoTexto, size: 16),
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icono, color: color, size: 16),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(titulo, style: AppTipo.bodyMedium()
-                  .copyWith(color: AppColores.textoPrincipal)),
-              const SizedBox(height: 2),
-              Text(subtitulo, style: AppTipo.caption()
-                  .copyWith(color: AppColores.textoSecundario)),
-            ],
+          Expanded(
+            child: Text(feedback, style: AppTipo.body()
+                .copyWith(color: AppColores.textoPrincipal)),
           ),
         ],
       ),
@@ -45,6 +70,13 @@ class ResultadoPantalla extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resultado = ModalRoute.of(context)?.settings.arguments as ResultadoAnalisis?;
+
+    // Datos hardcodeados si no hay resultado real aún
+    final puntaje  = resultado?.puntaje   ?? 100;
+    final ejercicio= resultado?.ejercicio ?? 'sentadilla';
+    final feedback = resultado?.feedback  ?? ['Ejercicio analizado correctamente.'];
+
     return Scaffold(
       backgroundColor: AppColores.fondoApp,
       appBar: Encabezado(
@@ -54,68 +86,69 @@ class ResultadoPantalla extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // Card resultado general - Recordar que tengo que cambiarlo dependiendo
-          // De la respuesta del modelo de IA.
+          // Card resultado general
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColores.correctoBg,
+              color: _bgPuntaje(puntaje),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
                 Container(
                   width: 40, height: 40,
-                  decoration: const BoxDecoration(
-                    color: AppColores.correctoTexto,
+                  decoration: BoxDecoration(
+                    color: _colorPuntaje(puntaje),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 22),
+                  child: Icon(_iconoPuntaje(puntaje), color: Colors.white, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Ejercicio correcto', style: AppTipo.cardTitle()
-                          .copyWith(color: AppColores.correctoTexto)),
-                      Text('Sentadilla analizada', style: AppTipo.caption()
-                          .copyWith(color: AppColores.correctoTexto)),
+                      Text(_labelPuntaje(puntaje), style: AppTipo.cardTitle()
+                          .copyWith(color: _colorPuntaje(puntaje))),
+                      Text(ejercicio.replaceAll('_', ' '), style: AppTipo.caption()
+                          .copyWith(color: _colorPuntaje(puntaje))),
                     ],
                   ),
                 ),
-                Text('100/100', style: AppTipo.statNumber()
-                    .copyWith(color: AppColores.correctoTexto)),
+                Text('$puntaje/100', style: AppTipo.statNumber()
+                    .copyWith(color: _colorPuntaje(puntaje))),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // Widgets de detalles
           Text('Detalle del análisis', style: AppTipo.labelMedium()
               .copyWith(color: AppColores.textoSecundario)),
           const SizedBox(height: 10),
 
-          _itemDetalle('Posición de las rodillas', 'Ángulo correcto durante todo el ejercicio'),
-          _itemDetalle('Posición de la espalda', 'Ángulo correcto durante todo el ejercicio'),
-          _itemDetalle('Profundidad de la sentadilla', 'Ángulo correcto durante todo el ejercicio'),
-
+          ...feedback.map((f) => _itemDetalle(f, puntaje)),
           const SizedBox(height: 24),
 
+          // Mensaje final
           Center(
             child: Column(
               children: [
-                Text('¡Felicitaciones!', style: AppTipo.cardTitle()
-                    .copyWith(color: AppColores.textoPrincipal)),
+                Text(
+                  puntaje >= 80 ? '¡Felicitaciones!' : 'Sigue mejorando',
+                  style: AppTipo.cardTitle().copyWith(color: AppColores.textoPrincipal),
+                ),
                 const SizedBox(height: 4),
-                Text('Nada que corregir. ¡Bien hecho!', style: AppTipo.caption()
-                    .copyWith(color: AppColores.textoSecundario)),
+                Text(
+                  puntaje >= 80
+                      ? 'Nada que corregir. ¡Bien hecho!'
+                      : 'Revisa el feedback para mejorar.',
+                  style: AppTipo.caption().copyWith(color: AppColores.textoSecundario),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
 
-          // Botones
           BotonPrincipal(
             texto: 'Volver al inicio',
             onPressed: () => Navigator.pushReplacementNamed(context, Rutas.inicio),

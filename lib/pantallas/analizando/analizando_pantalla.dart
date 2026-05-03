@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../core/tema/colores.dart';
 import '../../core/tema/tipografia.dart';
 import '../../core/widgets/encabezado.dart';
 import '../../core/widgets/boton_principal.dart';
+import '../../servicios/auth_servicios.dart';
+import '../../servicios/historial_servicio.dart';
+import '../../servicios/servicio_ia.dart';
 import '../../rutas.dart';
 
 class AnalizandoPantalla extends StatefulWidget {
@@ -13,37 +17,70 @@ class AnalizandoPantalla extends StatefulWidget {
 }
 
 class _AnalizandoPantallaState extends State<AnalizandoPantalla> {
-  // Variable para hacer el while
-  double _progreso = 0.0;
+  bool _iniciado = false;
 
   @override
-  void initState() {
-    super.initState();
-    _simularAnalisis();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_iniciado) {
+      _iniciado = true;
+      _analizarVideo();
+    }
   }
 
-  Future<void> _simularAnalisis() async {
-    // Ciclo mientrasn otengo el modelo
-    for (int i = 0; i <= 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted) {
-        setState(() => _progreso = i / 10);
-      }
+  Future<void> _analizarVideo() async {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final video    = args?['video']    as File?;
+    final ejercicio= args?['ejercicio'] as String? ?? 'sentadilla';
+
+    if (video == null) {
+      Navigator.pushReplacementNamed(context, Rutas.preparacion);
+      return;
     }
-    // Cuando llega al 100% navega a resultado
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, Rutas.resultado);
+
+    try {
+      final resultado = await ServicioIA.analizarVideo(
+        video: video,
+        ejercicio: ejercicio,
+      );
+
+      final usuario = AuthServicio.usuarioActual.isNotEmpty
+          ? AuthServicio.usuarioActual
+          : 'anonimo';
+      final videoNombre = video.path.split(Platform.pathSeparator).last;
+
+      try {
+        await HistorialServicio.guardarAnalisis(
+          usuario: usuario,
+          resultado: resultado,
+          videoNombre: videoNombre,
+        );
+      } catch (_) {
+        // Si falla el guardado local, igual mostramos el resultado.
+      }
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, Rutas.resultado, arguments: resultado);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+        Navigator.pushReplacementNamed(context, Rutas.preparacion);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final nombreVideo = (args?['video'] as File?)?.path.split('\\').last ?? 'video.mp4';
+    final ejercicio   = args?['ejercicio'] as String? ?? 'sentadilla';
+
     return Scaffold(
       backgroundColor: AppColores.fondoApp,
-      appBar: Encabezado(
-        titulo: 'Analizando',
-        centrado: true,
-      ),
+      appBar: Encabezado(titulo: 'Analizando', centrado: true),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -72,9 +109,9 @@ class _AnalizandoPantallaState extends State<AnalizandoPantalla> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('sentadilla_video.mp4', style: AppTipo.bodyMedium()
+                        Text(nombreVideo, style: AppTipo.bodyMedium()
                             .copyWith(color: AppColores.textoPrincipal)),
-                        Text('24 MB · 1:42 min', style: AppTipo.caption()
+                        Text(ejercicio.replaceAll('_', ' '), style: AppTipo.caption()
                             .copyWith(color: AppColores.textoSecundario)),
                       ],
                     ),
@@ -93,10 +130,10 @@ class _AnalizandoPantallaState extends State<AnalizandoPantalla> {
             ),
             const SizedBox(height: 48),
 
-            // Spinner icono
+            // Spinner
             Container(
               width: 80, height: 80,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColores.azulLight,
                 shape: BoxShape.circle,
               ),
@@ -115,25 +152,9 @@ class _AnalizandoPantallaState extends State<AnalizandoPantalla> {
             const SizedBox(height: 4),
             Text('La IA está evaluando tu video', style: AppTipo.caption()
                 .copyWith(color: AppColores.textoSecundario)),
-            const SizedBox(height: 20),
-
-            // Progeso
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: _progreso,
-                minHeight: 8,
-                backgroundColor: AppColores.bordeDefault,
-                color: AppColores.azulPrincipal,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text('${(_progreso * 100).toInt()}%', style: AppTipo.caption()
-                .copyWith(color: AppColores.azulPrincipal)),
 
             const Spacer(),
 
-            // Botón cancelar
             BotonPrincipal(
               texto: 'Cancelar',
               secundario: true,
