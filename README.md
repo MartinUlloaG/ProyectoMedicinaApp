@@ -6,51 +6,86 @@
 
 ## Descripción
 
-Aplicación móvil que realiza análisis de movimiento humano mediante visión por computador.  
-La app captura datos desde el dispositivo móvil y los envía a un backend en Python, donde son procesados con MediaPipe para extraer información de pose y movimiento en tiempo real.
+Aplicación móvil desarrollada como proyecto universitario real que analiza la calidad de ejecución de ejercicios físicos mediante visión por computador.
 
-El proyecto explora la integración de inteligencia artificial en aplicaciones móviles, utilizando una arquitectura cliente-servidor ligera basada en servicios.
+El usuario graba o sube un video del ejercicio desde su celular. La app lo envía a un servidor Python que procesa el video frame a frame con MediaPipe, extrae landmarks corporales, calcula ángulos entre articulaciones y devuelve un puntaje de 0 a 100 con feedback específico por zona del cuerpo.
 
 ---
 
-## Stack tecnológico
+## Stack
 
 **Frontend**
 - Flutter (Dart)
-- Android Studio
+- Persistencia local en JSON por usuario
 
 **Backend**
-- Python
-- FastAPI
-- Uvicorn
-
-**Visión por computador / IA**
-- MediaPipe
-- OpenCV (opcional)
+- Python, FastAPI, Uvicorn
+- MediaPipe Pose Landmarker
 
 **Comunicación**
-- API REST (HTTP)
+- API REST — el emulador Android accede al servidor vía `10.0.2.2:8000`
 
 ---
 
 ## Arquitectura
+lib/
+├── core/
+│   ├── tema/          # Colores, tipografía, tema global (design tokens)
+│   └── widgets/       # Widgets reutilizables compartidos entre pantallas
+├── modelos/           # Clases de datos (Sesion, ResultadoAnalisis)
+├── pantallas/         # Una carpeta por pantalla con su modelo asociado
+├── servicios/         # Lógica desacoplada (auth, historial local, llamada a IA)
+├── main.dart
+└── rutas.dart
 
-El sistema está dividido en dos componentes:
-
-- **App móvil (Flutter):** captura datos del usuario y los envía al servidor.
-- **Servidor de IA (Python):** procesa el movimiento con MediaPipe y devuelve resultados estructurados.
-
-El backend funciona como una API local accesible en red.
+El servidor de análisis corre separado y expone un único endpoint:
+POST /analizar
+body: video (archivo) + ejercicio (string)
+response: { ejercicio, puntaje, feedback[], metricas{} }
 
 ---
 
-## Ejecución del proyecto
+## Ejercicios soportados
 
-### Backend
+- Sentadilla
+- Zancada
+- Curl de bíceps sentado
+- Press de hombros sentado
 
-Activar el entorno virtual y levantar el servidor:
+---
 
+## Cómo correr el proyecto
+
+**Servidor:**
 ```bash
-cd C:\Users\ullov\Desktop\MedicinaIA\ProyectoMovimiento-
+cd ProyectoMovimiento-
 venv\Scripts\activate
 uvicorn servidor:app --reload --host 0.0.0.0 --port 8000
+```
+
+**App:**
+```bash
+cd medicina_app
+flutter pub get
+flutter run
+```
+
+---
+
+## Condiciones de video recomendadas
+
+- Grabar de frente o de lado según el ejercicio
+- Cuerpo completo visible desde cabeza hasta pies
+- Buena iluminación, sin contraluces
+
+---
+
+## Roadmap
+
+- Autenticación con backend real y JWT
+- Servidor desplegado en la nube
+- Modo offline con modelo TFLite en dispositivo
+- Historial con comparación entre sesiones
+
+---
+
