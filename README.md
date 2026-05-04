@@ -58,7 +58,7 @@ response: { ejercicio, puntaje, feedback[], metricas{} }
 
 **Servidor:**
 ```bash
-cd ProyectoMovimiento-
+cd \MedicinaIA\ProyectoMovimiento-
 venv\Scripts\activate
 uvicorn servidor:app --reload --host 0.0.0.0 --port 8000
 ```
